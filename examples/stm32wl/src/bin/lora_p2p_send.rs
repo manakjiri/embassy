@@ -17,7 +17,7 @@ use lora_phy::sx1261_2::SX1261_2;
 use lora_phy::LoRa;
 use {defmt_rtt as _, panic_probe as _};
 
-const LORA_FREQUENCY_IN_HZ: u32 = 903_900_000; // warning: set this appropriately for the region
+const LORA_FREQUENCY_IN_HZ: u32 = 869_525_000; // warning: set this appropriately for the region
 
 bind_interrupts!(struct Irqs{
     SUBGHZ_RADIO => InterruptHandler;
