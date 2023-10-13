@@ -11,7 +11,7 @@ use embassy_lora::iv::{InterruptHandler, Stm32wlInterfaceVariant};
 use embassy_stm32::bind_interrupts;
 use embassy_stm32::gpio::{Level, Output, Pin, Speed};
 use embassy_stm32::spi::Spi;
-use embassy_time::Delay;
+use embassy_time::{Delay, Timer, Duration};
 use lora_phy::mod_params::*;
 use lora_phy::sx1261_2::SX1261_2;
 use lora_phy::LoRa;
@@ -30,6 +30,7 @@ async fn main(_spawner: Spawner) {
     let p = embassy_stm32::init(config);
 
     let spi = Spi::new_subghz(p.SUBGHZSPI, p.DMA1_CH1, p.DMA1_CH2);
+    let mut debug_indicator = Output::new(p.PB15, Level::Low, Speed::Low);
 
     // Set CTRL1 and CTRL3 for high-power transmission, while CTRL2 acts as an RF switch between tx and rx
     let _ctrl1 = Output::new(p.PC4.degrade(), Level::Low, Speed::High);
@@ -47,11 +48,13 @@ async fn main(_spawner: Spawner) {
         }
     };
 
+    let mut receiving_buffer = [00u8; 100];
+
     let mdltn_params = {
         match lora.create_modulation_params(
-            SpreadingFactor::_10,
+            SpreadingFactor::_5,
             Bandwidth::_250KHz,
-            CodingRate::_4_8,
+            CodingRate::_4_6,
             LORA_FREQUENCY_IN_HZ,
         ) {
             Ok(mp) => mp,
@@ -72,27 +75,68 @@ async fn main(_spawner: Spawner) {
         }
     };
 
-    match lora.prepare_for_tx(&mdltn_params, 20, false).await {
-        Ok(()) => {}
-        Err(err) => {
-            info!("Radio error = {}", err);
-            return;
+    let rx_pkt_params = {
+        match lora.create_rx_packet_params(4, false, receiving_buffer.len() as u8, true, false, &mdltn_params) {
+            Ok(pp) => pp,
+            Err(err) => {
+                info!("Radio error = {}", err);
+                return;
+            }
         }
     };
 
-    let buffer = [0x01u8, 0x02u8, 0x03u8];
-    match lora.tx(&mdltn_params, &mut tx_pkt_params, &buffer, 0xffffff).await {
-        Ok(()) => {
-            info!("TX DONE");
-        }
-        Err(err) => {
-            info!("Radio error = {}", err);
-            return;
-        }
-    };
+    loop {
+        debug_indicator.set_high();
+        match lora.prepare_for_tx(&mdltn_params, 20, false).await {
+            Ok(()) => {}
+            Err(err) => {
+                info!("Radio error = {}", err);
+                return;
+            }
+        };
 
-    match lora.sleep(false).await {
-        Ok(()) => info!("Sleep successful"),
-        Err(err) => info!("Sleep unsuccessful = {}", err),
+        let buffer = [0x01u8, 0x02u8, 0x03u8];
+        match lora.tx(&mdltn_params, &mut tx_pkt_params, &buffer, 0xffffff).await {
+            Ok(()) => {
+                info!("TX DONE");
+            }
+            Err(err) => {
+                info!("Radio error = {}", err);
+                return;
+            }
+        };
+
+        match lora
+            .prepare_for_rx(&mdltn_params, &rx_pkt_params, None, None, false)
+            .await
+        {
+            Ok(()) => {}
+            Err(err) => {
+                info!("Radio error = {}", err);
+                return;
+            }
+        };
+        
+        
+        receiving_buffer = [00u8; 100];
+        match lora.rx(&rx_pkt_params, &mut receiving_buffer).await {
+            Ok((received_len, _rx_pkt_status)) => {
+                if (received_len == 3)
+                    && (receiving_buffer[0] == 0x01u8)
+                    && (receiving_buffer[1] == 0x02u8)
+                    && (receiving_buffer[2] == 0x03u8)
+                {
+                    info!("rx successful");
+                } else {
+                    info!("rx unknown packet");
+                }
+            }
+            Err(err) => info!("rx unsuccessful = {}", err),
+        }
+        debug_indicator.set_low();
+
+        Timer::after(Duration::from_millis(5000)).await;
     }
+
+    
 }

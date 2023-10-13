@@ -47,8 +47,8 @@ async fn main(_spawner: Spawner) {
         }
     };
 
-    let mut debug_indicator = Output::new(p.PB9, Level::Low, Speed::Low);
-    let mut start_indicator = Output::new(p.PB15, Level::Low, Speed::Low);
+    let mut debug_indicator = Output::new(p.PB15, Level::Low, Speed::Low);
+    let mut start_indicator = Output::new(p.PB9, Level::Low, Speed::Low);
 
     start_indicator.set_high();
     Timer::after(Duration::from_secs(5)).await;
@@ -58,9 +58,9 @@ async fn main(_spawner: Spawner) {
 
     let mdltn_params = {
         match lora.create_modulation_params(
-            SpreadingFactor::_10,
+            SpreadingFactor::_5,
             Bandwidth::_250KHz,
-            CodingRate::_4_8,
+            CodingRate::_4_6,
             LORA_FREQUENCY_IN_HZ,
         ) {
             Ok(mp) => mp,
@@ -81,18 +81,18 @@ async fn main(_spawner: Spawner) {
         }
     };
 
-    match lora
-        .prepare_for_rx(&mdltn_params, &rx_pkt_params, None, None, false)
-        .await
-    {
-        Ok(()) => {}
-        Err(err) => {
-            info!("Radio error = {}", err);
-            return;
-        }
-    };
-
     loop {
+        match lora
+            .prepare_for_rx(&mdltn_params, &rx_pkt_params, None, None, false)
+            .await
+        {
+            Ok(()) => {}
+            Err(err) => {
+                info!("Radio error = {}", err);
+                return;
+            }
+        };
+
         receiving_buffer = [00u8; 100];
         match lora.rx(&rx_pkt_params, &mut receiving_buffer).await {
             Ok((received_len, _rx_pkt_status)) => {
@@ -103,7 +103,38 @@ async fn main(_spawner: Spawner) {
                 {
                     info!("rx successful");
                     debug_indicator.set_high();
-                    Timer::after(Duration::from_secs(5)).await;
+                    
+
+                    let mut tx_pkt_params = {
+                        match lora.create_tx_packet_params(4, false, true, false, &mdltn_params) {
+                            Ok(pp) => pp,
+                            Err(err) => {
+                                info!("Radio error = {}", err);
+                                return;
+                            }
+                        }
+                    };
+            
+                    match lora.prepare_for_tx(&mdltn_params, 20, false).await {
+                        Ok(()) => {}
+                        Err(err) => {
+                            info!("Radio error = {}", err);
+                            return;
+                        }
+                    };
+            
+                    let buffer = [0x01u8, 0x02u8, 0x03u8];
+                    match lora.tx(&mdltn_params, &mut tx_pkt_params, &buffer, 0xffffff).await {
+                        Ok(()) => {
+                            info!("TX DONE");
+                        }
+                        Err(err) => {
+                            info!("Radio error = {}", err);
+                            return;
+                        }
+                    };
+
+                    //Timer::after(Duration::from_secs(1)).await;
                     debug_indicator.set_low();
                 } else {
                     info!("rx unknown packet");
