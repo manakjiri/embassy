@@ -10,7 +10,8 @@ use embassy_executor::Spawner;
 use embassy_lora::iv::{InterruptHandler, Stm32wlInterfaceVariant};
 use embassy_stm32::bind_interrupts;
 use embassy_stm32::gpio::{Level, Output, Pin, Speed};
-use embassy_stm32::spi::Spi;
+use embassy_stm32::spi::{Spi, Config};
+use embassy_stm32::time::Hertz;
 use embassy_time::{Delay, Duration, Timer};
 use lora_phy::mod_params::*;
 use lora_phy::sx1261_2::SX1261_2;
@@ -46,6 +47,12 @@ async fn main(_spawner: Spawner) {
             }
         }
     };
+
+    let mut spi_config = Config::default();
+    spi_config.frequency = Hertz(1_000_000);
+    let mut _spi = Spi::new(p.SPI1, p.PB3, p.PB5, p.PB4, p.DMA2_CH3, p.DMA2_CH2, spi_config);
+    let spi_data = [1u8, 2u8, 3u8];
+    _spi.write(&spi_data).await.ok();
 
     let mut debug_indicator = Output::new(p.PB15, Level::Low, Speed::Low);
     let mut start_indicator = Output::new(p.PB9, Level::Low, Speed::Low);
