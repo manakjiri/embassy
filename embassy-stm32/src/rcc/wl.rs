@@ -105,7 +105,7 @@ pub(crate) unsafe fn init(config: Config) {
         ClockSrc::HSE => {
             // Enable HSE
             RCC.cr().write(|w| {
-                w.set_hsebyppwr(true);
+                w.set_hsebyppwr(false);
                 w.set_hseon(true);
             });
             while !RCC.cr().read().hserdy() {}
