@@ -33,9 +33,7 @@ async fn main(_spawner: Spawner) {
     let spi = Spi::new_subghz(p.SUBGHZSPI, p.DMA1_CH1, p.DMA1_CH2);
 
     // Set CTRL1 and CTRL3 for high-power transmission, while CTRL2 acts as an RF switch between tx and rx
-    let _ctrl1 = Output::new(p.PC4.degrade(), Level::Low, Speed::High);
-    let ctrl2 = Output::new(p.PC5.degrade(), Level::High, Speed::High);
-    let _ctrl3 = Output::new(p.PC3.degrade(), Level::High, Speed::High);
+    let ctrl2 = Output::new(p.PA9.degrade(), Level::High, Speed::High);
     let iv = Stm32wlInterfaceVariant::new(Irqs, None, Some(ctrl2)).unwrap();
 
     let mut lora = {
@@ -48,18 +46,18 @@ async fn main(_spawner: Spawner) {
         }
     };
 
-    let mut spi_config = Config::default();
-    spi_config.frequency = Hertz(1_000_000);
-    let mut _spi = Spi::new(p.SPI1, p.PB3, p.PB5, p.PB4, p.DMA2_CH3, p.DMA2_CH2, spi_config);
-    let spi_data = [1u8, 2u8, 3u8];
-    _spi.write(&spi_data).await.ok();
+    //let mut spi_config = Config::default();
+    //spi_config.frequency = Hertz(1_000_000);
+    //let mut _spi = Spi::new(p.SPI1, p.PB3, p.PB5, p.PB4, p.DMA2_CH3, p.DMA2_CH2, spi_config);
+    //let spi_data = [1u8, 2u8, 3u8];
+    //_spi.write(&spi_data).await.ok();
 
-    let mut debug_indicator = Output::new(p.PB15, Level::Low, Speed::Low);
-    let mut start_indicator = Output::new(p.PB9, Level::Low, Speed::Low);
+    let mut debug_indicator = Output::new(p.PC13, Level::Low, Speed::Low);
+    //let mut start_indicator = Output::new(p.PB9, Level::Low, Speed::Low);
 
-    start_indicator.set_high();
+    debug_indicator.set_high();
     Timer::after(Duration::from_secs(5)).await;
-    start_indicator.set_low();
+    debug_indicator.set_low();
 
     let mut receiving_buffer = [00u8; 100];
 

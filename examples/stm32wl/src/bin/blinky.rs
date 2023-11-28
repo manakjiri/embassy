@@ -10,10 +10,12 @@ use {defmt_rtt as _, panic_probe as _};
 
 #[embassy_executor::main]
 async fn main(_spawner: Spawner) {
-    let p = embassy_stm32::init(Default::default());
+    let mut config = embassy_stm32::Config::default();
+    config.rcc.mux = embassy_stm32::rcc::ClockSrc::HSE;
+    let p = embassy_stm32::init(config);
     info!("Hello World!");
 
-    let mut led = Output::new(p.PB15, Level::High, Speed::Low);
+    let mut led = Output::new(p.PC13, Level::High, Speed::Low);
 
     loop {
         info!("high");
