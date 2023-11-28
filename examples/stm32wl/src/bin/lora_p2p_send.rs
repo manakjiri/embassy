@@ -14,7 +14,6 @@ use embassy_stm32::gpio::{Level, Output, Pin, Speed};
 use embassy_stm32::spi::Spi;
 use embassy_time::{Delay, Timer, Duration, Instant};
 use embassy_stm32::time::Hertz;
-use embassy_time::Delay;
 use lora_phy::mod_params::*;
 use lora_phy::sx1261_2::SX1261_2;
 use lora_phy::LoRa;
