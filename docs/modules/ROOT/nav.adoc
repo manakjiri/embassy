@@ -1,5 +1,6 @@
 * xref:getting_started.adoc[Getting started]
 ** xref:basic_application.adoc[Basic application]
+** xref:project_structure.adoc[Project Structure]
 * xref:layer_by_layer.adoc[Bare metal to async]
 * xref:runtime.adoc[Executor]
 * xref:hal.adoc[HAL]
@@ -10,3 +11,4 @@
 * xref:examples.adoc[Examples]
 * xref:developer.adoc[Developer]
 ** xref:developer_stm32.adoc[Developer: STM32]
+* xref:faq.adoc[Frequently Asked Questions]

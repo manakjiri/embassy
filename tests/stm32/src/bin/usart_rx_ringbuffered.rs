@@ -2,7 +2,6 @@
 
 #![no_std]
 #![no_main]
-#![feature(type_alias_impl_trait)]
 #[path = "../common.rs"]
 mod common;
 
@@ -10,7 +9,7 @@ use common::*;
 use defmt::{assert_eq, panic};
 use embassy_executor::Spawner;
 use embassy_stm32::usart::{Config, DataBits, Parity, RingBufferedUartRx, StopBits, Uart, UartTx};
-use embassy_time::{Duration, Timer};
+use embassy_time::Timer;
 use rand_chacha::ChaCha8Rng;
 use rand_core::{RngCore, SeedableRng};
 
@@ -54,7 +53,7 @@ async fn main(spawner: Spawner) {
 #[embassy_executor::task]
 async fn transmit_task(mut tx: UartTx<'static, peris::UART, peris::UART_TX_DMA>) {
     // workaround https://github.com/embassy-rs/embassy/issues/1426
-    Timer::after(Duration::from_millis(100) as _).await;
+    Timer::after_millis(100).await;
 
     let mut rng = ChaCha8Rng::seed_from_u64(1337);
 
@@ -70,7 +69,7 @@ async fn transmit_task(mut tx: UartTx<'static, peris::UART, peris::UART_TX_DMA>)
         }
 
         tx.write(&buf[..len]).await.unwrap();
-        Timer::after(Duration::from_micros((rng.next_u32() % 1000) as _)).await;
+        Timer::after_micros((rng.next_u32() % 1000) as _).await;
     }
 }
 
@@ -98,7 +97,7 @@ async fn receive_task(mut rx: RingBufferedUartRx<'static, peris::UART, peris::UA
         }
 
         if received < max_len {
-            Timer::after(Duration::from_micros((rng.next_u32() % 1000) as _)).await;
+            Timer::after_micros((rng.next_u32() % 1000) as _).await;
         }
 
         i += received;

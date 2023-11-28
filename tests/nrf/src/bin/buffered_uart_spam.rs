@@ -1,6 +1,5 @@
 #![no_std]
 #![no_main]
-#![feature(type_alias_impl_trait)]
 teleprobe_meta::target!(b"nrf52840-dk");
 
 use core::mem;
@@ -13,7 +12,7 @@ use embassy_nrf::gpio::{Level, Output, OutputDrive};
 use embassy_nrf::ppi::{Event, Ppi, Task};
 use embassy_nrf::uarte::Uarte;
 use embassy_nrf::{bind_interrupts, pac, peripherals, uarte};
-use embassy_time::{Duration, Timer};
+use embassy_time::Timer;
 use {defmt_rtt as _, panic_probe as _};
 
 bind_interrupts!(struct Irqs {
@@ -50,7 +49,7 @@ async fn main(_spawner: Spawner) {
     info!("uarte initialized!");
 
     // uarte needs some quiet time to start rxing properly.
-    Timer::after(Duration::from_millis(10)).await;
+    Timer::after_millis(10).await;
 
     // Tx spam in a loop.
     const NSPAM: usize = 17;

@@ -4,6 +4,7 @@
 #![no_main]
 #![macro_use]
 #![feature(type_alias_impl_trait, async_fn_in_trait)]
+#![allow(stable_features, unknown_lints, async_fn_in_trait)]
 
 use defmt::info;
 use embassy_executor::Spawner;
@@ -27,7 +28,23 @@ bind_interrupts!(struct Irqs{
 #[embassy_executor::main]
 async fn main(_spawner: Spawner) {
     let mut config = embassy_stm32::Config::default();
-    config.rcc.mux = embassy_stm32::rcc::ClockSrc::HSE;
+    {
+        use embassy_stm32::rcc::*;
+        config.rcc.hse = Some(Hse {
+            freq: Hertz(32_000_000),
+            mode: HseMode::Bypass,
+            prescaler: HsePrescaler::DIV1,
+        });
+        config.rcc.mux = ClockSrc::PLL1_R;
+        config.rcc.pll = Some(Pll {
+            source: PllSource::HSE,
+            prediv: PllPreDiv::DIV2,
+            mul: PllMul::MUL6,
+            divp: None,
+            divq: Some(PllQDiv::DIV2), // PLL1_Q clock (32 / 2 * 6 / 2), used for RNG
+            divr: Some(PllRDiv::DIV2), // sysclk 48Mhz clock (32 / 2 * 6 / 2)
+        });
+    }
     let p = embassy_stm32::init(config);
 
     let spi = Spi::new_subghz(p.SUBGHZSPI, p.DMA1_CH1, p.DMA1_CH2);
@@ -58,6 +75,10 @@ async fn main(_spawner: Spawner) {
     debug_indicator.set_high();
     Timer::after(Duration::from_secs(5)).await;
     debug_indicator.set_low();
+    
+    //start_indicator.set_high();
+    //Timer::after_secs(5).await;
+    //start_indicator.set_low();
 
     let mut receiving_buffer = [00u8; 100];
 
@@ -113,6 +134,7 @@ async fn main(_spawner: Spawner) {
                     info!("rx snr {} rssi {}", rx_pkt_status.snr, rx_pkt_status.rssi);
 
                     Timer::after(Duration::from_millis(100)).await;
+                    //Timer::after_secs(5).await;
                     debug_indicator.set_low();
                 } else {
                     info!("rx unknown packet");
