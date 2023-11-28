@@ -32,7 +32,7 @@ async fn main(_spawner: Spawner) {
         use embassy_stm32::rcc::*;
         config.rcc.hse = Some(Hse {
             freq: Hertz(32_000_000),
-            mode: HseMode::Bypass,
+            mode: HseMode::Oscillator,
             prescaler: HsePrescaler::DIV1,
         });
         config.rcc.mux = ClockSrc::PLL1_R;
@@ -63,6 +63,17 @@ async fn main(_spawner: Spawner) {
         }
     };
 
+    /* let mut led = Output::new(p.PC13, Level::High, Speed::Low);
+    loop {
+        info!("high");
+        led.set_high();
+        Timer::after_millis(500).await;
+
+        info!("low");
+        led.set_low();
+        Timer::after_millis(500).await;
+    } */
+
     //let mut spi_config = Config::default();
     //spi_config.frequency = Hertz(1_000_000);
     //let mut _spi = Spi::new(p.SPI1, p.PB3, p.PB5, p.PB4, p.DMA2_CH3, p.DMA2_CH2, spi_config);
@@ -73,11 +84,11 @@ async fn main(_spawner: Spawner) {
     //let mut start_indicator = Output::new(p.PB9, Level::Low, Speed::Low);
 
     debug_indicator.set_high();
-    Timer::after(Duration::from_secs(5)).await;
+    //Timer::after(Duration::from_secs(5)).await;
+    //Timer::after_secs(5).await;
     debug_indicator.set_low();
     
     //start_indicator.set_high();
-    //Timer::after_secs(5).await;
     //start_indicator.set_low();
 
     let mut receiving_buffer = [00u8; 100];
@@ -133,8 +144,8 @@ async fn main(_spawner: Spawner) {
                     debug_indicator.set_high();
                     info!("rx snr {} rssi {}", rx_pkt_status.snr, rx_pkt_status.rssi);
 
-                    Timer::after(Duration::from_millis(100)).await;
-                    //Timer::after_secs(5).await;
+                    //Timer::after(Duration::from_millis(100)).await;
+                    Timer::after_secs(1).await;
                     debug_indicator.set_low();
                 } else {
                     info!("rx unknown packet");
